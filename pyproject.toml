@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "transponster"
+version = "0.1.0"
+description = ""
+authors = ["Adam Blanchet <ab59@sanger.ac.uk>"]
+
+[tool.poetry.scripts]
+transponster = "transponster.main:main"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+partisan = { git = "https://github.com/wtsi-npg/partisan.git", branch = "devel"}
+ml-warehouse = {git = "https://github.com/wtsi-npg/ml-warehouse-python.git", branch = "devel"}
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = "^22.1.0"
+pylint = "^2.12.2"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
