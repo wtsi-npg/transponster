@@ -29,11 +29,13 @@ class ProcessingThread(Thread):
             self.logger.info(f"current directory is {os.getcwd()}")
             self.logger.info(f"Running script on {working_dir}")
             self.script.run(working_dir)
-            self.logger.info(f"Finished running script on {working_dir}, removing input")
+            self.logger.info(
+                f"Finished running script on {working_dir}, removing input"
+            )
             # Delete input file once done
             rmtree(input_folder_path)
 
-            upload_batch =  UploadBatch(list(), input_obj.tmp_folder)
+            upload_batch = UploadBatch(list(), input_obj.tmp_folder)
 
             # Add all items to upload queue
             for (dirpath, dirnames, filenames) in os.walk(Path(working_dir, "output")):
@@ -44,7 +46,7 @@ class ProcessingThread(Thread):
 
                     local_obj = LocalObject(None, fname, fpath, input_obj.tmp_folder)
                     # self.to_upload.put(local_obj)
-                    
+
                     upload_batch.local_objs.append(local_obj)
             self.to_upload.put(upload_batch)
 

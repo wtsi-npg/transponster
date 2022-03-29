@@ -40,17 +40,18 @@ class Script:
         input_folder = Path(working_dir, "input")
         LOGGER.info(f"run script in directory {working_directory}")
         # input("WAIT HERE WAIT HERE WAIT HERE WAIT HERE")
-        process = subprocess.run([self.path, input_folder], cwd=working_directory, capture_output=True)
+        process = subprocess.run(
+            [self.path, input_folder], cwd=working_directory, capture_output=True
+        )
         LOGGER.info(process.stdout.decode())
         LOGGER.info(process.stderr.decode())
         LOGGER.info("script run")
 
 
 class UploadBatch(object):
+    def __init__(
+        self, local_objs: List[LocalObject], tmp_dir: TemporaryDirectory
+    ) -> None:
 
-    def __init__(self, local_objs: List[LocalObject], tmp_dir: TemporaryDirectory) -> None:
-        
         self.local_objs = local_objs
         self.tmp_dir = tmp_dir
-
-    
