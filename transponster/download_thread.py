@@ -7,6 +7,8 @@ from threading import Thread
 from partisan.irods import Collection
 from partisan.irods import DataObject
 from partisan.irods import log
+from os import mkdir
+from structlog import get_logger
 
 from transponster.util import LocalObject
 
@@ -26,14 +28,15 @@ class DownloadThread(Thread):
         self.to_download = to_download
         self.downloaded = downloaded
         self.scratch_location = scratch_location
+        self.logger = get_logger()
 
     def run(self):
 
         while not self.to_download.empty():
 
-            print("Getting next obj to download")
+            self.logger.info("Getting next obj to download")
             obj: DataObject = self.to_download.get()
-            print(f"Got {obj.name} to download")
+            self.logger.info(f"Got {obj.name} to download")
             my_tmp_dir = None
             if self.scratch_location:
                 my_tmp_dir = TemporaryDirectory(
@@ -42,14 +45,16 @@ class DownloadThread(Thread):
             else:
                 my_tmp_dir = TemporaryDirectory(prefix="transponster-")
 
-            my_path = Path(my_tmp_dir.name, obj.name).resolve()
+            input_folder_path = Path(my_tmp_dir.name, "input").resolve()
+            mkdir(input_folder_path)
+            my_path = Path(input_folder_path, obj.name).resolve()
 
             try:
                 obj.get(my_path, tries=5)
             except:
-                print("ERROR ERROR ERROR")
-            print(f"Downloaded to {my_path}")
+                self.logger.info("ERROR ERROR ERROR")
+            self.logger.info(f"Downloaded to {my_path}")
 
             self.downloaded.put(LocalObject(obj, my_path, my_tmp_dir, my_tmp_dir))
 
-        print("Download thread done")
+        self.logger.info("Download thread done")

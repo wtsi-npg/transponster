@@ -1,12 +1,14 @@
 import argparse
-
 from pathlib import Path
-from partisan.irods import Collection, DataObject, log
+from queue import Queue
+
+import transponster.logging
+from partisan.irods import Collection
+
 from transponster.download_thread import DownloadThread
 from transponster.processing_thread import ProcessingThread
 from transponster.upload_thread import UploadThread
 from transponster.util import Script
-from queue import Queue
 
 
 def main():

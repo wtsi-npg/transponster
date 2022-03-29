@@ -2,6 +2,8 @@ from fileinput import filename
 from os import PathLike
 from pathlib import Path
 import subprocess
+from tempfile import TemporaryDirectory
+from typing import List
 
 
 class LocalObject:
@@ -30,10 +32,20 @@ class Script:
 
         self.path = path
 
-    def run(self, input_path: PathLike):
-        working_directory = Path(input_path).parent
-        filename = Path(input_path).name
+    def run(self, working_dir: PathLike):
+        working_directory = Path(working_dir)
+        input_folder = Path(working_dir, "input")
         print(f"run script in directory {working_directory}")
         # input("WAIT HERE WAIT HERE WAIT HERE WAIT HERE")
-        subprocess.run([self.path, filename], cwd=working_directory)
+        subprocess.run([self.path, input_folder], cwd=working_directory)
         print("script run")
+
+
+class UploadBatch(object):
+
+    def __init__(self, local_objs: List[LocalObject], tmp_dir: TemporaryDirectory) -> None:
+        
+        self.local_objs = local_objs
+        self.tmp_dir = tmp_dir
+
+    

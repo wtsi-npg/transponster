@@ -10,7 +10,7 @@ transponster = "transponster.main:main"
 [tool.poetry.dependencies]
 python = "^3.9"
 partisan = { git = "https://github.com/wtsi-npg/partisan.git", branch = "devel"}
-ml-warehouse = {git = "https://github.com/wtsi-npg/ml-warehouse-python.git", branch = "devel"}
+structlog = "^21.5.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
