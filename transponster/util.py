@@ -4,6 +4,9 @@ from pathlib import Path
 import subprocess
 from tempfile import TemporaryDirectory
 from typing import List
+from structlog import get_logger
+
+LOGGER = get_logger()
 
 
 class LocalObject:
@@ -35,10 +38,12 @@ class Script:
     def run(self, working_dir: PathLike):
         working_directory = Path(working_dir)
         input_folder = Path(working_dir, "input")
-        print(f"run script in directory {working_directory}")
+        LOGGER.info(f"run script in directory {working_directory}")
         # input("WAIT HERE WAIT HERE WAIT HERE WAIT HERE")
-        subprocess.run([self.path, input_folder], cwd=working_directory)
-        print("script run")
+        process = subprocess.run([self.path, input_folder], cwd=working_directory, capture_output=True)
+        LOGGER.info(process.stdout.decode())
+        LOGGER.info(process.stderr.decode())
+        LOGGER.info("script run")
 
 
 class UploadBatch(object):

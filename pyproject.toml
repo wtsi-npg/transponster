@@ -11,6 +11,7 @@ transponster = "transponster.main:main"
 python = "^3.9"
 partisan = { git = "https://github.com/wtsi-npg/partisan.git", branch = "devel"}
 structlog = "^21.5.0"
+progressbar2 = "^4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

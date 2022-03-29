@@ -46,7 +46,8 @@ def main():
     if not my_collection.exists():
         print(f"Error: Collection {input_collection_path} does not exist.")
         exit(1)
-
+    
+    n_files = 0
     for obj in my_collection.iter_contents():
 
         if type(obj) == Collection:
@@ -54,12 +55,13 @@ def main():
             return 1
 
         download_queue.put(obj)
+        n_files += 1
 
     download_thread = DownloadThread(
         my_collection, download_queue, downloaded_queue, scratch_location
     )
     processing_thread = ProcessingThread(downloaded_queue, upload_queue, script)
-    upload_thread = UploadThread(Collection(args.output_files_path), upload_queue)
+    upload_thread = UploadThread(Collection(args.output_files_path), upload_queue, n_files)
 
     download_thread.start()
     processing_thread.start()
