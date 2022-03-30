@@ -2,16 +2,18 @@ import argparse
 from pathlib import Path
 from queue import Queue
 
-import transponster.logging
+import transponster.logging as _  # Control the logging
 from partisan.irods import Collection
+from structlog import get_logger
 
 from transponster.download_thread import DownloadThread
 from transponster.processing_thread import ProcessingThread
 from transponster.upload_thread import UploadThread
-from transponster.util import Script
+from transponster.util import JobBatch, Script
 
 
 def main():
+    LOGGER = get_logger()
 
     parser = argparse.ArgumentParser("transponster")
     parser.add_argument("--input_collection", required=True)
@@ -47,22 +49,27 @@ def main():
         print(f"Error: Collection {input_collection_path} does not exist.")
         exit(1)
 
-    n_files = 0
+    # The following loop can be improved to allow batching of processing inputs
+    n_batches = 0
     for obj in my_collection.iter_contents():
-
         if type(obj) == Collection:
-            print(f" Collection {obj.path} found. Subcollections are not yet supported")
-            return 1
+            raise NotImplementedError(
+                f" Collection {obj.path} found. Subcollections are not yet supported"
+            )
 
-        download_queue.put(obj)
-        n_files += 1
+        LOGGER.info(f"Adding {obj.name} as a job batch")
+        job_batch = JobBatch(scratch_location=scratch_location)
+        job_batch.add_input_obj(obj)
+        download_queue.put(job_batch)
+
+        n_batches += 1
 
     download_thread = DownloadThread(
         my_collection, download_queue, downloaded_queue, scratch_location
     )
     processing_thread = ProcessingThread(downloaded_queue, upload_queue, script)
     upload_thread = UploadThread(
-        Collection(args.output_files_path), upload_queue, n_files
+        Collection(args.output_files_path), upload_queue, n_batches
     )
 
     download_thread.start()

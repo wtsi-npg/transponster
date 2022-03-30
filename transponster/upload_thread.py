@@ -1,14 +1,11 @@
-from contextlib import redirect_stderr
-import os
-from pathlib import Path
 from queue import Queue
 from threading import Thread
 
-from partisan.irods import Collection, DataObject, log
+from partisan.irods import Collection
 from structlog import get_logger
 import progressbar
 
-from transponster.util import LocalObject, UploadBatch
+from transponster.util import JobBatch
 
 
 class UploadThread(Thread):
@@ -36,25 +33,15 @@ class UploadThread(Thread):
         self.progress_bar.start()
         while not (self.upload_queue.empty() and self.done):
             self.logger.info("Waiting for next batch to upload")
-            # local_obj: LocalObject = self.upload_queue.get()
-            batch: UploadBatch = self.upload_queue.get()
+            batch: JobBatch = self.upload_queue.get()
 
             self.count += 1
             self.progress_bar.update(self.count)
 
-            for local_obj in batch.local_objs:
+            for obj in batch.get_output_objs(self.upload_location):
+                obj.upload()
+                obj.remove_local_file()
 
-                remote_path = Path(self.upload_location.path, local_obj.local_name)
-                data_obj = DataObject(remote_path)
-                local_path = local_obj.get_local_path()
-                self.logger.info(f"Going to upload file {local_path} to {remote_path}")
-
-                data_obj.put(local_path)
-                self.logger.info(
-                    f"Finished uploading file {local_path} to {remote_path}"
-                )
-
-                self.logger.info(f"Deleting local file {local_path}")
-                os.remove(local_path)
+            self.logger.info(f"Batch #{self.count} uploaded")
 
         self.logger.info("Upload thread done")

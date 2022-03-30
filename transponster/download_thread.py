@@ -2,15 +2,11 @@
 """
 from pathlib import Path
 from queue import Queue
-from tempfile import TemporaryDirectory
 from threading import Thread
 from partisan.irods import Collection
-from partisan.irods import DataObject
-from partisan.irods import log
-from os import mkdir
 from structlog import get_logger
 
-from transponster.util import LocalObject
+from transponster.util import JobBatch
 
 
 class DownloadThread(Thread):
@@ -35,26 +31,12 @@ class DownloadThread(Thread):
         while not self.to_download.empty():
 
             self.logger.info("Getting next obj to download")
-            obj: DataObject = self.to_download.get()
-            self.logger.info(f"Got {obj.name} to download")
-            my_tmp_dir = None
-            if self.scratch_location:
-                my_tmp_dir = TemporaryDirectory(
-                    prefix="transponster-", dir=self.scratch_location
-                )
-            else:
-                my_tmp_dir = TemporaryDirectory(prefix="transponster-")
+            batch: JobBatch = self.to_download.get()
 
-            input_folder_path = Path(my_tmp_dir.name, "input").resolve()
-            mkdir(input_folder_path)
-            my_path = Path(input_folder_path, obj.name).resolve()
+            for obj in batch.input_objs:
 
-            try:
-                obj.get(my_path, tries=5)
-            except:
-                self.logger.info("ERROR ERROR ERROR")
-            self.logger.info(f"Downloaded to {my_path}")
-
-            self.downloaded.put(LocalObject(obj, my_path, my_tmp_dir, my_tmp_dir))
+                obj.download()
+            self.logger.info("Finished downloading in batch")
+            self.downloaded.put(batch)
 
         self.logger.info("Download thread done")

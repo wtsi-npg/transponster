@@ -1,10 +1,9 @@
-import os
 from pathlib import Path
 from queue import Queue
 from threading import Thread
 from shutil import rmtree
 
-from transponster.util import LocalObject, Script, UploadBatch
+from transponster.util import JobBatch, Script
 from structlog import get_logger
 
 
@@ -21,12 +20,12 @@ class ProcessingThread(Thread):
     def run(self):
 
         while not (self.downloaded.empty() and self.done):
+            self.logger.info("Waiting for next batch to process")
+            job_batch: JobBatch = self.downloaded.get()
+            self.logger.info(f"Got batch at folder {job_batch.tmp_dir.name}")
+            working_dir = Path(job_batch.tmp_dir.name).resolve()
+            input_folder_path = job_batch.input_folder_path
 
-            input_obj: LocalObject = self.downloaded.get()
-            working_dir = Path(input_obj.local_folder.name).resolve()
-            input_folder_path = Path(working_dir, "input")
-
-            self.logger.info(f"current directory is {os.getcwd()}")
             self.logger.info(f"Running script on {working_dir}")
             self.script.run(working_dir)
             self.logger.info(
@@ -35,19 +34,7 @@ class ProcessingThread(Thread):
             # Delete input file once done
             rmtree(input_folder_path)
 
-            upload_batch = UploadBatch(list(), input_obj.tmp_folder)
-
-            # Add all items to upload queue
-            for (dirpath, dirnames, filenames) in os.walk(Path(working_dir, "output")):
-
-                for fname in filenames:
-                    fpath = Path(working_dir.parent, dirpath)
-                    self.logger.info(f"Adding {fpath}/{fname} to upload queue")
-
-                    local_obj = LocalObject(None, fname, fpath, input_obj.tmp_folder)
-                    # self.to_upload.put(local_obj)
-
-                    upload_batch.local_objs.append(local_obj)
-            self.to_upload.put(upload_batch)
+            # Send the batch to the upload_thread
+            self.to_upload.put(job_batch)
 
         self.logger.info("Processing thread done")
