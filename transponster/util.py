@@ -1,11 +1,14 @@
 """Useful types"""
 from dataclasses import dataclass
+from enum import Enum, auto
+from threading import Event
 import os
 from os import PathLike, mkdir, remove
 from pathlib import Path
+from queue import Queue
 import subprocess
 from tempfile import TemporaryDirectory
-from typing import List
+from typing import Any, List
 from structlog import get_logger
 
 from partisan.irods import DataObject, Collection
@@ -84,13 +87,14 @@ class Script:
         working_directory = Path(working_dir)
         input_folder = Path(working_dir, "input")
         LOGGER.info(f"run script in directory {working_directory}")
-        # input("WAIT HERE WAIT HERE WAIT HERE WAIT HERE")
+
         process = subprocess.run(
             [self.path, input_folder],
             cwd=working_directory,
             capture_output=True,
             check=True,
         )
+
         LOGGER.info(process.stdout.decode())
         LOGGER.info(process.stderr.decode())
         LOGGER.info("script run")
@@ -158,3 +162,38 @@ class JobBatch:
     def output_folder_path(self):
         """Output folder path for this batch"""
         return Path(self.tmp_dir.name, "output")
+
+
+class ErrorType(Enum):
+    FailedToDownload = (auto,)
+    FailedToProcess = (auto,)
+    FailedToUpload = (auto,)
+
+
+@dataclass
+class FailedJobBatch:
+
+    job_batch: JobBatch
+    message: str
+    reason: ErrorType
+
+    def cleanup_tmp(self):
+
+        self.job_batch.tmp_dir.cleanup()
+
+    def get_input_object_locations(self) -> List[str]:
+        output = []
+        for obj in self.job_batch.input_objs:
+            output.append(obj.data_obj.name)
+        return output
+
+    def get_error_message(self) -> str:
+
+        if self.reason == ErrorType.FailedToDownload:
+            return f"Failed to download some inputs: {self.message}"
+
+        if self.reason == ErrorType.FailedToProcess:
+            return f"Failed to process some inputs: {self.message}"
+
+        if self.reason == ErrorType.FailedToUpload:
+            return f"Failed to upload some inputs: {self.message}"
