@@ -2,13 +2,13 @@
 import argparse
 from pathlib import Path
 from queue import Queue
-from transponster.controller import Controller
 
 # pylint: disable=wrong-import-order
 import transponster.logging as _  # Control the logging, needs to be imported before partisan.irods
 from partisan.irods import Collection
 from structlog import get_logger
 
+from transponster.controller import Controller
 from transponster.util import JobBatch, Script
 
 

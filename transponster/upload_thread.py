@@ -7,7 +7,13 @@ from partisan.irods import Collection
 from structlog import get_logger
 
 
-from transponster.util import ErrorType, FailedJobBatch, JobBatch
+from transponster.util import (
+    ClosedException,
+    ErrorType,
+    FailedJobBatch,
+    JobBatch,
+    WrappedQueue,
+)
 
 
 class UploadThread(Thread):
@@ -16,7 +22,7 @@ class UploadThread(Thread):
     def __init__(
         self,
         upload_location: Collection,
-        upload_queue: Queue,
+        upload_queue: WrappedQueue,
         error_queue: Queue,
         max_size: int,
     ):
@@ -31,11 +37,14 @@ class UploadThread(Thread):
 
     def run(self):
         while not (self.upload_queue.empty() and self.done):
-            self.logger.info("Waiting for next batch to upload")
-            batch: JobBatch = self.upload_queue.get()
-
+            self.logger.info(f"Waiting for next batch to upload {self.done}")
+            try:
+                batch: JobBatch = self.upload_queue.get()
+            except ClosedException:
+                self.done = True
+                break
             self.count += 1
-            if batch == None:
+            if batch is None:
                 self.logger.info("Batch is empty due to previous error")
                 continue
             errored = False
@@ -45,9 +54,9 @@ class UploadThread(Thread):
                     obj.upload()
                     obj.remove_local_file()
 
-                except Exception as e:
+                except Exception as exception:
                     failed_batch = FailedJobBatch(
-                        batch, e.__repr__, ErrorType.FailedToUpload
+                        batch, exception.__repr__, ErrorType.UPLOAD_FAILED
                     )
                     self.logger.error(failed_batch.get_error_message())
                     self.error_queue.put(failed_batch)

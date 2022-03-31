@@ -16,11 +16,12 @@ from transponster.processing_thread import ProcessingThread
 from transponster.upload_thread import UploadThread
 
 
-from transponster.util import FailedJobBatch, Script
+from transponster.util import FailedJobBatch, Script, WrappedQueue
 
 
 @dataclass
 class Controller:
+    """Controller for the different threads."""
 
     n_batches: int
     input_queue: Queue = Queue()
@@ -54,8 +55,8 @@ class Controller:
 
         # Set up the stages of the pipeline
 
-        processing_queue = Queue(maxsize=max_per_stage)
-        output_queue = Queue(maxsize=max_per_stage)
+        processing_queue = WrappedQueue(maxsize=max_per_stage)
+        output_queue = WrappedQueue(maxsize=max_per_stage)
         self.error_queue = Queue()
 
         self.download_thread = DownloadThread(
@@ -87,6 +88,7 @@ class Controller:
         progress_thread.start()
 
         self.download_thread.join()
+        logger.info("Controller sees download thread is done")
         self.processing_thread.done = True
         self.processing_thread.join()
         self.upload_thread.done = True
@@ -98,22 +100,28 @@ class Controller:
             logger.info("All jobs completed successfully!")
             return
 
+        # Error reporting
+
+        message = "The following errors occured:\n\n"
+
         while not self.error_queue.empty():
             failed_batch: FailedJobBatch = self.error_queue.get()
 
             inputs = failed_batch.get_input_object_locations()
 
-            message = f"Error: {failed_batch.get_error_message()}\n"
+            message += f"Error: {failed_batch.get_error_message()}\n"
             message += "\t Error occured for the following inputs:\n"
             for fname in inputs:
                 message += f"\t\t{fname}\n"
 
-            logger.error(message)
+            message += "\n"
+
+        logger.error(message)
 
     def _progress_bar_worker(self):
 
         self._progressbar.start()
         while not self.done:
-            sleep(1)
+            sleep(0.5)
             self._progressbar.update(value=self.upload_thread.count)
         self._progressbar.finish()

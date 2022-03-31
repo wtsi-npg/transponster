@@ -1,7 +1,7 @@
 """Useful types"""
 from dataclasses import dataclass
 from enum import Enum, auto
-from threading import Event
+from threading import Event, Lock
 import os
 from os import PathLike, mkdir, remove
 from pathlib import Path
@@ -165,35 +165,101 @@ class JobBatch:
 
 
 class ErrorType(Enum):
-    FailedToDownload = (auto,)
-    FailedToProcess = (auto,)
-    FailedToUpload = (auto,)
+    """Type of error a batch can fail with."""
+
+    DOWNLOAD_FAILED = (auto,)
+    PROCESSING_FAILED = (auto,)
+    UPLOAD_FAILED = (auto,)
 
 
 @dataclass
 class FailedJobBatch:
+    """A failed Job Batch."""
 
     job_batch: JobBatch
     message: str
     reason: ErrorType
 
     def cleanup_tmp(self):
-
+        """Cleanup the temporary directory for the batch."""
         self.job_batch.tmp_dir.cleanup()
 
     def get_input_object_locations(self) -> List[str]:
+        """Get the list of input files for the batch."""
         output = []
         for obj in self.job_batch.input_objs:
             output.append(obj.data_obj.name)
         return output
 
     def get_error_message(self) -> str:
-
-        if self.reason == ErrorType.FailedToDownload:
+        """Get the error message."""
+        if self.reason == ErrorType.DOWNLOAD_FAILED:
             return f"Failed to download some inputs: {self.message}"
 
-        if self.reason == ErrorType.FailedToProcess:
+        if self.reason == ErrorType.PROCESSING_FAILED:
             return f"Failed to process some inputs: {self.message}"
 
-        if self.reason == ErrorType.FailedToUpload:
+        if self.reason == ErrorType.UPLOAD_FAILED:
             return f"Failed to upload some inputs: {self.message}"
+
+        # Default case for linter
+        return f"Unknown failure for some inputs: {self.message}"
+
+
+class ClosedException(Exception):
+    """Just an Exception"""
+
+
+class WrappedQueue:
+    """Wrapper around a Queue which allows to signal closing the Queue."""
+
+    _queue: Queue
+    _closed: bool
+    _put_event: Event
+    _lock: Lock
+
+    def __init__(self, maxsize: int = 0) -> None:
+        self._queue = Queue(maxsize=maxsize)
+        self._closed = False
+        self._lock = Lock()
+        self._put_event = Event()
+
+    def put(self, item: Any):
+        """Put an item into the queue.
+
+        Args:
+            item: the item to put
+        """
+        with self._lock:
+            if self._closed:
+                raise ClosedException("Cannot put to a closed WrappedQueue.")
+        self._put_event.set()
+        self._queue.put(item)
+
+    def close(self):
+        """Close the queue.
+
+        Subsequent calls to put() will raise a ClosedException.
+        Subsequent calls to get() will raise a ClosedException if the queue is empty.
+        """
+        with self._lock:
+            self._closed = True
+            self._put_event.set()
+
+    def get(self):
+        """Get the next item from the queue.
+
+        Raises a ClosedException if the queue is both closed and empty.
+        """
+        if self._queue.empty():
+            with self._lock:
+                if self._queue.empty() and self._closed:
+                    raise ClosedException("Queue is closed and empty")
+            self._put_event.wait()
+            self._put_event.clear()
+
+        return self._queue.get()
+
+    def empty(self) -> bool:
+        """Is the queue empty."""
+        return self._queue.empty()

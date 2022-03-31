@@ -5,7 +5,7 @@ from queue import Queue
 from threading import Thread
 from structlog import get_logger
 
-from transponster.util import ErrorType, FailedJobBatch, JobBatch
+from transponster.util import ErrorType, FailedJobBatch, JobBatch, WrappedQueue
 
 
 class DownloadThread(Thread):
@@ -14,7 +14,7 @@ class DownloadThread(Thread):
     def __init__(
         self,
         to_download: Queue,
-        downloaded: Queue,
+        downloaded: WrappedQueue,
         error_queue: Queue,
         scratch_location: Path,
     ) -> None:
@@ -35,10 +35,10 @@ class DownloadThread(Thread):
             for obj in batch.input_objs:
                 try:
                     obj.download()
-                except Exception as e:
+                except Exception as exception:
                     errored = True
                     failed_batch = FailedJobBatch(
-                        batch, e.__repr__(), ErrorType.FailedToDownload
+                        batch, exception.__repr__(), ErrorType.DOWNLOAD_FAILED
                     )
                     self.logger.error(failed_batch.get_error_message())
                     self.error_queue.put(failed_batch)
@@ -50,4 +50,5 @@ class DownloadThread(Thread):
             else:
                 self.downloaded.put(None)
 
+        self.downloaded.close()
         self.logger.info("Download thread done")

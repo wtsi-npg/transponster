@@ -4,11 +4,17 @@ from pathlib import Path
 from queue import Queue
 from threading import Thread
 from shutil import rmtree
-from typing import overload
 
 from structlog import get_logger
 
-from transponster.util import ErrorType, FailedJobBatch, JobBatch, Script
+from transponster.util import (
+    ClosedException,
+    ErrorType,
+    FailedJobBatch,
+    JobBatch,
+    Script,
+    WrappedQueue,
+)
 
 
 class ProcessingThread(Thread):
@@ -16,8 +22,8 @@ class ProcessingThread(Thread):
 
     def __init__(
         self,
-        downloaded: Queue,
-        to_upload: Queue,
+        downloaded: WrappedQueue,
+        to_upload: WrappedQueue,
         error_queue: Queue,
         script_to_run: Script,
     ):
@@ -34,9 +40,14 @@ class ProcessingThread(Thread):
 
         while not (self.downloaded.empty() and self.done):
             self.logger.info("Waiting for next batch to process")
-            job_batch: JobBatch = self.downloaded.get()
-            if job_batch == None:
-                self.logger.info("Batch is empty do to previous error")
+            try:
+                job_batch: JobBatch = self.downloaded.get()
+            except ClosedException:
+                self.done = True
+                break
+
+            if job_batch is None:
+                self.logger.info("Processing: Batch is empty do to previous error")
                 self.to_upload.put(None)
                 continue
             self.logger.info(f"Got batch at folder {job_batch.tmp_dir.name}")
@@ -46,9 +57,9 @@ class ProcessingThread(Thread):
             self.logger.info(f"Running script on {working_dir}")
             try:
                 self.script.run(working_dir)
-            except Exception as e:
+            except Exception as exception:
                 failed_batch = FailedJobBatch(
-                    job_batch, e.__repr__(), ErrorType.FailedToProcess
+                    job_batch, exception.__repr__(), ErrorType.PROCESSING_FAILED
                 )
                 self.logger.error(failed_batch.get_error_message())
                 self.error_queue.put(failed_batch)
@@ -64,4 +75,5 @@ class ProcessingThread(Thread):
             # Send the batch to the upload_thread
             self.to_upload.put(job_batch)
 
+        self.to_upload.close()
         self.logger.info("Processing thread done")
