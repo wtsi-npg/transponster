@@ -1,13 +1,19 @@
+"""Processing thread."""
+
 from pathlib import Path
 from queue import Queue
 from threading import Thread
 from shutil import rmtree
+from typing import overload
+
+from structlog import get_logger
 
 from transponster.util import JobBatch, Script
-from structlog import get_logger
 
 
 class ProcessingThread(Thread):
+    """Run scripts on inputs and send to upload thread."""
+
     def __init__(self, downloaded: Queue, to_upload: Queue, script_to_run: Script):
         Thread.__init__(self)
 
@@ -17,6 +23,7 @@ class ProcessingThread(Thread):
         self.done = False
         self.logger = get_logger()
 
+    @overload
     def run(self):
 
         while not (self.downloaded.empty() and self.done):

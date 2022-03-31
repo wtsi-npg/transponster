@@ -1,4 +1,4 @@
-"""Download thread
+"""Download thread.
 """
 from pathlib import Path
 from queue import Queue
@@ -10,7 +10,7 @@ from transponster.util import JobBatch
 
 
 class DownloadThread(Thread):
-    """Download thread"""
+    """Download thread."""
 
     def __init__(
         self,

@@ -25,6 +25,11 @@ class LocalObject2:
     is_remote: bool = True
 
     def download(self, tries=5):
+        """Download the file to is local location.
+
+        Args:
+            tries: The max number of tries to attempt.
+        """
 
         if self.is_local:
             raise Exception("Cannot download a LocalObject2 twice.")
@@ -33,6 +38,11 @@ class LocalObject2:
         self.is_local = True
 
     def upload(self, tries=5):
+        """Upload the file to its remote location.
+
+        Args:
+            tries: the max number of tries to attempt.
+        """
 
         if self.is_remote:
             raise Exception("Cannot upload a LocalObject2 twice.")
@@ -44,6 +54,7 @@ class LocalObject2:
         self.is_remote = True
 
     def remove_local_file(self):
+        """Remove the file from local disk."""
 
         if not self.is_local:
             raise Exception("Cannot remove a file that is not local")
@@ -52,25 +63,11 @@ class LocalObject2:
         self.is_local = False
 
 
-class LocalObject:
-    def __init__(self, data_obj, local_name, local_folder, tmp_folder) -> None:
-        self.data_obj = data_obj
-        self.local_name = local_name
-        self.local_folder = local_folder
-        self.tmp_folder = tmp_folder
-
-    def get_local_path_relative(self):
-        return Path(self.local_folder.name, self.local_name)
-
-    def get_local_path(self):
-        return Path(self.local_folder, self.local_name)
-
-
 class Script:
     """A script to run on an input file and which produces an output file
 
     It must meet the following conditions:
-        - the script must take one input file
+        - the script must take one input folder
         - the script must produce output files in a folder named "output"
     """
 
@@ -79,6 +76,11 @@ class Script:
         self.path = path
 
     def run(self, working_dir: PathLike):
+        """Run the script.
+
+        Args:
+            working_dir: the path to the working directory for the script.
+        """
         working_directory = Path(working_dir)
         input_folder = Path(working_dir, "input")
         LOGGER.info(f"run script in directory {working_directory}")
@@ -94,16 +96,7 @@ class Script:
         LOGGER.info("script run")
 
 
-class UploadBatch(object):
-    def __init__(
-        self, local_objs: List[LocalObject], tmp_dir: TemporaryDirectory
-    ) -> None:
-
-        self.local_objs = local_objs
-        self.tmp_dir = tmp_dir
-
-
-class JobBatch(object):
+class JobBatch:
     """An object used to track files being processed."""
 
     input_objs: List[LocalObject2]
@@ -111,13 +104,22 @@ class JobBatch(object):
     def __init__(self, scratch_location=None) -> None:
         self.input_objs = []
 
-        # Set up temporary folders
+        # Set up temporary folders. We want to keep the TemporaryDirectory in the object,
+        # so it gets destroyed at the same time as the JobBatch.
+        # pylint: disable=consider-using-with
         self.tmp_dir = TemporaryDirectory(prefix="transponster-", dir=scratch_location)
         mkdir(Path(self.tmp_dir.name, "input"))
         mkdir(Path(self.tmp_dir.name, "output"))
 
     def get_output_objs(self, output_collection: Collection) -> List[LocalObject2]:
-        """Get all objects to upload from the 'output' folder"""
+        """Get all objects to upload from the 'output' folder
+
+        Args:
+            output_collection: The destination iRODS Collection for the objects.
+
+        Returns:
+            A list of objects which will be uploaded to the intended iRODS location.
+        """
 
         root = Path(self.tmp_dir.name, "output")
         objs: List[LocalObject2] = []
@@ -135,7 +137,11 @@ class JobBatch(object):
         return objs
 
     def add_input_obj(self, obj: DataObject):
-        """Add an object to the list of inputs"""
+        """Add an object to the list of inputs
+
+        Args:
+            obj: the DataObject to add.
+        """
         local_name = obj.name
         local_folder = self.input_folder_path
         local_object = LocalObject2(

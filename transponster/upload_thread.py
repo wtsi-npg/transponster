@@ -1,3 +1,5 @@
+"""Upload thread."""
+
 from queue import Queue
 from threading import Thread
 
@@ -9,6 +11,8 @@ from transponster.util import JobBatch
 
 
 class UploadThread(Thread):
+    """Upload files to iRODS."""
+
     def __init__(self, upload_location: Collection, upload_queue: Queue, max_size: int):
         Thread.__init__(self)
 

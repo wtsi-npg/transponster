@@ -1,8 +1,10 @@
+"""Main script for Transponster"""
 import argparse
 from pathlib import Path
 from queue import Queue
 
-import transponster.logging as _  # Control the logging
+# pylint: disable=wrong-import-order
+import transponster.logging as _  # Control the logging, needs to be imported before partisan.irods
 from partisan.irods import Collection
 from structlog import get_logger
 
@@ -13,6 +15,7 @@ from transponster.util import JobBatch, Script
 
 
 def main():
+    """Entry point."""
     LOGGER = get_logger()
 
     parser = argparse.ArgumentParser("transponster")
@@ -35,8 +38,7 @@ def main():
     # Check script exists
     script_path = Path(args.script).resolve()
     if not script_path.exists():
-        print(f"Script {script_path} does not exist, exiting")
-        return 1
+        raise Exception(f"Script {script_path} does not exist, exiting")
 
     script = Script(script_path)
 
@@ -46,13 +48,12 @@ def main():
 
     my_collection = Collection(input_collection_path)
     if not my_collection.exists():
-        print(f"Error: Collection {input_collection_path} does not exist.")
-        exit(1)
+        raise Exception(f"Error: Collection {input_collection_path} does not exist.")
 
-    # The following loop can be improved to allow batching of processing inputs
+    # The following loop can be improved to allow batching of processing inputs.
     n_batches = 0
     for obj in my_collection.iter_contents():
-        if type(obj) == Collection:
+        if isinstance(obj, Collection):
             raise NotImplementedError(
                 f" Collection {obj.path} found. Subcollections are not yet supported"
             )
