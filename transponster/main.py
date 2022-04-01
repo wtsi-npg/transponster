@@ -17,9 +17,9 @@ def main():
     LOGGER = get_logger()
 
     parser = argparse.ArgumentParser("transponster")
-    parser.add_argument("--input_collection", required=True)
-    parser.add_argument("--output_collection", required=True)
-    parser.add_argument("--script", required=True)
+    parser.add_argument("-i", "--input_collection", required=True)
+    parser.add_argument("-o", "--output_collection", required=True)
+    parser.add_argument("-s", "--script", required=True)
     parser.add_argument("--scratch_location")
     parser.add_argument("-n", "--max-items-per-stage", type=int, default=1)
     parser.description = "Execute a script on files stored in iRODS"
