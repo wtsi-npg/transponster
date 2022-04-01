@@ -21,11 +21,14 @@ def main():
     parser.add_argument("-o", "--output_collection", required=True)
     parser.add_argument("-s", "--script", required=True)
     parser.add_argument("--scratch_location")
-    parser.add_argument("-n", "--max-items-per-stage", type=int, default=1)
-    parser.description = "Execute a script on files stored in iRODS"
+    parser.add_argument("-n", "--max_items_per_stage", type=int, default=1)
+    parser.description = """Execute a script on files stored in iRODS. 
+        The script must take as input a folder, and place its ouput in
+        a folder named 'output' which will be created for it."""
     args = parser.parse_args()
 
-    max_per_stage = 2
+    if args.max_items_per_stage <= 0:
+        raise Exception("max_items_per_stage must be strictly positive.")
 
     scratch_location = (
         Path(args.scratch_location).resolve()
@@ -73,7 +76,7 @@ def main():
         script,
         download_queue,
         n_batches,
-        max_per_stage,
+        args.max_items_per_stage,
         scratch_location,
     )
 
