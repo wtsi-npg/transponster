@@ -1,8 +1,10 @@
 [tool.poetry]
 name = "transponster"
 version = "0.1.0"
-description = ""
+description = "Get files from iRODS, process them, and upload the results."
 authors = ["Adam Blanchet <ab59@sanger.ac.uk>"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
 
 [tool.poetry.scripts]
 transponster = "transponster.main:main"
