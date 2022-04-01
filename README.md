@@ -2,6 +2,12 @@
 
 ![Transponster](https://media2.giphy.com/media/QRPx31XOyvCpO/giphy.gif?cid=ecf05e47pvs0fgsj34qz3lfwitqy4oqlkcnm2t84ppk7rwb8&rid=giphy.gif&ct=g)
 
+Transponster will download the next files to process and upload the previous files generated whilst doing a batch of processing: it allows processing to be done with both minimal staging area and minimal blocking on downloading input and uploading output.
+
+## Requirements
+
+Transponster depends on [partisan](https://github.com/wtsi-npg/partisan) and as such requires the `baton-do` executable from [baton](https://github.com/wtsi-npg/baton) to be installed.
+
 ## Usage
 
 ```txt
