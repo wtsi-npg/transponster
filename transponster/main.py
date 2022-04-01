@@ -18,7 +18,7 @@ def main():
 
     parser = argparse.ArgumentParser("transponster")
     parser.add_argument("--input_collection", required=True)
-    parser.add_argument("--output_files_path", required=True)
+    parser.add_argument("--output_collection", required=True)
     parser.add_argument("--script", required=True)
     parser.add_argument("--scratch_location")
     parser.add_argument("-n", "--max-items-per-stage", type=int, default=1)
@@ -41,14 +41,21 @@ def main():
 
     script = Script(script_path)
 
-    my_collection = Collection(input_collection_path)
-    if not my_collection.exists():
-        raise Exception(f"Error: Collection {input_collection_path} does not exist.")
+    input_collection = Collection(args.input_collection)
+    if not input_collection.exists():
+        raise Exception(
+            f"Error: Input Collection {input_collection_path} does not exist."
+        )
 
+    output_collection = Collection(args.output_collection)
+    if not output_collection.exists():
+        raise Exception(
+            f"Error: Output Collection {args.output_collection} does not exsits."
+        )
     # The following loop can be improved to allow batching of processing inputs.
     n_batches = 0
     download_queue = Queue()
-    for obj in my_collection.iter_contents():
+    for obj in input_collection.iter_contents():
         if isinstance(obj, Collection):
             raise NotImplementedError(
                 f" Collection {obj.path} found. Subcollections are not yet supported"
@@ -62,7 +69,7 @@ def main():
         n_batches += 1
 
     controller = Controller(
-        my_collection,
+        output_collection,
         script,
         download_queue,
         n_batches,
