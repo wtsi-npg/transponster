@@ -83,11 +83,14 @@ class Script:
 
         Args:
             working_dir: the path to the working directory for the script.
+
+        Raises:
+            CalledProcessError if the script returns with a non-zero exit status.
         """
         working_directory = Path(working_dir)
         input_folder = Path(working_dir, "input")
         LOGGER.info(f"run script in directory {working_directory}")
-
+        
         process = subprocess.run(
             [self.path, input_folder],
             cwd=working_directory,
@@ -167,9 +170,9 @@ class JobBatch:
 class ErrorType(Enum):
     """Type of error a batch can fail with."""
 
-    DOWNLOAD_FAILED = (auto,)
-    PROCESSING_FAILED = (auto,)
-    UPLOAD_FAILED = (auto,)
+    DOWNLOAD_FAILED = auto()
+    PROCESSING_FAILED = auto()
+    UPLOAD_FAILED = auto()
 
 
 @dataclass
@@ -177,7 +180,7 @@ class FailedJobBatch:
     """A failed Job Batch."""
 
     job_batch: JobBatch
-    message: str
+    exception: Exception
     reason: ErrorType
 
     def cleanup_tmp(self):
@@ -194,16 +197,18 @@ class FailedJobBatch:
     def get_error_message(self) -> str:
         """Get the error message."""
         if self.reason == ErrorType.DOWNLOAD_FAILED:
-            return f"Failed to download some inputs: {self.message}"
+            return f"Failed to download some inputs: {self.exception}"
 
         if self.reason == ErrorType.PROCESSING_FAILED:
-            return f"Failed to process some inputs: {self.message}"
+            message = f"Failed to process some inputs: {self.exception}\n"
+            message += f"\tstderr:\n{self.exception.stderr.decode()}\n"
+            return message
 
         if self.reason == ErrorType.UPLOAD_FAILED:
-            return f"Failed to upload some inputs: {self.message}"
+            return f"Failed to upload some inputs: {self.exception}"
 
         # Default case for linter
-        return f"Unknown failure for some inputs: {self.message}"
+        return f"Unknown failure for some inputs: {self.exception}"
 
 
 class ClosedException(Exception):

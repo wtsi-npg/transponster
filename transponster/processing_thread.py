@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from queue import Queue
+from subprocess import CalledProcessError
 from threading import Thread
 from shutil import rmtree
 
@@ -57,9 +58,9 @@ class ProcessingThread(Thread):
             self.logger.info(f"Running script on {working_dir}")
             try:
                 self.script.run(working_dir)
-            except Exception as exception:
+            except CalledProcessError as exception:
                 failed_batch = FailedJobBatch(
-                    job_batch, exception.__repr__(), ErrorType.PROCESSING_FAILED
+                    job_batch, exception, ErrorType.PROCESSING_FAILED
                 )
                 self.logger.error(failed_batch.get_error_message())
                 self.error_queue.put(failed_batch)
