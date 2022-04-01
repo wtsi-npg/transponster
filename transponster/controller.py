@@ -107,7 +107,7 @@ class Controller:
         progress_thread.start()
 
         self.download_thread.join()
-        logger.info("Controller sees download thread is done")
+        logger.debug("Controller sees download thread is done")
         self.processing_thread.done = True
         self.processing_thread.join()
         self.upload_thread.done = True

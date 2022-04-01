@@ -56,7 +56,7 @@ class UploadThread(Thread):
 
     def run(self):
         while not (self.upload_queue.empty() and self.done):
-            self.logger.info(f"Waiting for next batch to upload {self.done}")
+            self.logger.info("Waiting for next batch to upload")
             try:
                 batch: JobBatch = self.upload_queue.get()
             except ClosedException:
@@ -67,6 +67,8 @@ class UploadThread(Thread):
                 self.logger.info("Batch is empty due to previous error")
                 continue
             errored = False
+
+            self.logger.info(f"Upload: Got batch at folder {batch.tmp_dir.name}")
 
             for obj in batch.get_output_objs(self.upload_location):
                 try:

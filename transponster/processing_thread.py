@@ -70,7 +70,9 @@ class ProcessingThread(Thread):
                 self.logger.info("Processing: Batch is empty do to previous error")
                 self.to_upload.put(None)
                 continue
-            self.logger.info(f"Got batch at folder {job_batch.tmp_dir.name}")
+            self.logger.info(
+                f"Processing: Got batch at folder {job_batch.tmp_dir.name}"
+            )
             working_dir = Path(job_batch.tmp_dir.name).resolve()
             input_folder_path = job_batch.input_folder_path
 

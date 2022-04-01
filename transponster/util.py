@@ -108,7 +108,7 @@ class Script:
         """
         working_directory = Path(working_dir)
         input_folder = Path(working_dir, "input")
-        LOGGER.info(f"run script in directory {working_directory}")
+        LOGGER.debug(f"run script in directory {working_directory}")
 
         process = subprocess.run(
             [self.path, input_folder],
@@ -117,9 +117,9 @@ class Script:
             check=True,
         )
 
-        LOGGER.info(process.stdout.decode())
-        LOGGER.info(process.stderr.decode())
-        LOGGER.info("script run")
+        LOGGER.debug(process.stdout.decode())
+        LOGGER.debug(process.stderr.decode())
+        LOGGER.debug("script run")
 
 
 class JobBatch:

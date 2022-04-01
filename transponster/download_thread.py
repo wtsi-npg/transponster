@@ -51,6 +51,7 @@ class DownloadThread(Thread):
             self.logger.info("Getting next obj to download")
             batch: JobBatch = self.to_download.get()
             errored = False
+            self.logger.info(f"Download: Got batch at folder {batch.tmp_dir.name}")
             for obj in batch.input_objs:
                 try:
                     obj.download()
@@ -64,7 +65,7 @@ class DownloadThread(Thread):
                     break
 
             if not errored:
-                self.logger.info("Finished downloading in batch")
+                self.logger.info("Finished downloading files in batch")
                 self.downloaded.put(batch)
             else:
                 self.downloaded.put(None)
