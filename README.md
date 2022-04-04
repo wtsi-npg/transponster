@@ -11,7 +11,7 @@ Transponster depends on [partisan](https://github.com/wtsi-npg/partisan) and as 
 ## Usage
 
 ```txt
-usage: transponster [-h] -i INPUT_COLLECTION -o OUTPUT_COLLECTION -s SCRIPT [--scratch_location SCRATCH_LOCATION] [-n MAX_ITEMS_PER_STAGE]
+usage: transponster [-h] -i INPUT_COLLECTION -o OUTPUT_COLLECTION -s SCRIPT [--scratch_location SCRATCH_LOCATION] [-n MAX_ITEMS_PER_STAGE] [-p | --progress_bar | --no-progress_bar] [-v | --verbose | --no-verbose]
 
 Execute a script on files stored in iRODS. The script must take as input a folder, and place its ouput in a folder named 'output' which will be created for it.
 
@@ -22,4 +22,6 @@ optional arguments:
   -s SCRIPT, --script SCRIPT
   --scratch_location SCRATCH_LOCATION
   -n MAX_ITEMS_PER_STAGE, --max_items_per_stage MAX_ITEMS_PER_STAGE
+  -p, --progress_bar, --no-progress_bar
+  -v, --verbose, --no-verbose
 ```
