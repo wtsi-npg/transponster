@@ -23,7 +23,8 @@ from pathlib import Path
 from queue import Queue
 
 # pylint: disable=wrong-import-order
-import transponster.logging as _  # Control the logging, needs to be imported before partisan.irods
+# Control the logging, needs to be imported before partisan.irods
+import transponster.logging as _  # noqa: F401
 from partisan.irods import Collection
 from structlog import get_logger
 
