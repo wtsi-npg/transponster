@@ -192,6 +192,7 @@ class ErrorType(Enum):
     DOWNLOAD_FAILED = auto()
     PROCESSING_FAILED = auto()
     UPLOAD_FAILED = auto()
+    FILE_NOT_FOUND = auto()
 
 
 @dataclass
@@ -226,6 +227,9 @@ class FailedJobBatch:
 
         if self.reason == ErrorType.UPLOAD_FAILED:
             return f"Failed to upload some inputs: {self.exception}"
+
+        if self.reason == ErrorType.FILE_NOT_FOUND:
+            return f"Failed to run a script: {self.exception}"
 
         # Default case for linter
         return f"Unknown failure for some inputs: {self.exception}"
