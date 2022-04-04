@@ -15,7 +15,20 @@ jobs:
         with:
           python-version: '3.9'
           architecture: 'x64'
-      - run: |
+
+      - name: Setup Poetry
+        run: |
           pip install poetry
           poetry install
+
+      - name: Check formatting with Black
+        run: |
           poetry run black --check --diff --color .
+      
+      - name: Run flake8
+        run: |
+          poetry run flake8
+      
+      - name: Run bandit
+        run: |
+          poetry run bandit -r transponster
