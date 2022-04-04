@@ -42,6 +42,7 @@ def main():
     parser.add_argument("-s", "--script", required=True)
     parser.add_argument("--scratch_location")
     parser.add_argument("-n", "--max_items_per_stage", type=int, default=1)
+    parser.add_argument("-p", "--progress_bar", action=argparse.BooleanOptionalAction, default=False)
     parser.description = """Execute a script on files stored in iRODS.
         The script must take as input a folder, and place its ouput in
         a folder named 'output' which will be created for it."""
@@ -96,6 +97,7 @@ def main():
         script,
         download_queue,
         n_batches,
+        args.progress_bar,
         args.max_items_per_stage,
         scratch_location,
     )

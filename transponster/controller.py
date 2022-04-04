@@ -55,22 +55,25 @@ class Controller:
         script: Script,
         input_queue: Queue,
         n_batches: int,
+        progressbar_enabled: bool,
         max_per_stage: int = 1,
         scratch_location: Path = None,
     ) -> None:
         self.input_queue = input_queue
         self.n_batches = n_batches
         self.done = False
-        self._progressbar: ProgressBar = ProgressBar(
-            max_value=n_batches,
-            widgets=[
-                progressbar.widgets.PercentageLabelBar(),
-                progressbar.SimpleProgress(),
-            ],
-            redirect_stderr=True,
-            redirect_stdout=True,
-            poll_interval=1,
-        )
+        if progressbar_enabled:
+            self._progressbar: ProgressBar = ProgressBar(
+                max_value=n_batches,
+                widgets=[
+                    progressbar.widgets.PercentageLabelBar(),
+                    progressbar.SimpleProgress(),
+                ],
+                redirect_stderr=True,
+                redirect_stdout=True,
+                poll_interval=1,
+            )
+        self._progressbar_enabled = progressbar_enabled
 
         # Set up the stages of the pipeline
 
@@ -103,8 +106,9 @@ class Controller:
         self.processing_thread.start()
         self.upload_thread.start()
 
-        progress_thread = threading.Thread(target=self._progress_bar_worker)
-        progress_thread.start()
+        if self._progressbar_enabled:
+            progress_thread = threading.Thread(target=self._progress_bar_worker)
+            progress_thread.start()
 
         self.download_thread.join()
         logger.debug("Controller sees download thread is done")
@@ -113,7 +117,8 @@ class Controller:
         self.upload_thread.done = True
         self.upload_thread.join()
         self.done = True
-        progress_thread.join()
+        if self._progressbar_enabled:
+            progress_thread.join()
 
         if self.error_queue.empty():
             logger.info("All jobs completed successfully!")
