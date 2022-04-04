@@ -31,4 +31,4 @@ jobs:
       
       - name: Run bandit
         run: |
-          poetry run bandit -r transponster
+          poetry run bandit -r transponster -b .bandit_baseline
