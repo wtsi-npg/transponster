@@ -220,6 +220,7 @@ class FailedJobBatch:
 
         if self.reason == ErrorType.PROCESSING_FAILED:
             message = f"Failed to process some inputs: {self.exception}\n"
+            message += f"\tstdout:\n{self.exception.stdout.decode()}\n"
             message += f"\tstderr:\n{self.exception.stderr.decode()}\n"
             return message
 

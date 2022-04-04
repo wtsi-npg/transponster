@@ -18,35 +18,22 @@
 # @author Adam Blanchet <ab59@sanger.ac.uk>
 
 """Main script for Transponster"""
-import argparse
+
 from pathlib import Path
 from queue import Queue
 
+# To control the logging level, needs to be imported before partisan.irods
 # pylint: disable=wrong-import-order
-# Control the logging, needs to be imported before partisan.irods
-import transponster.logging as _  # noqa: F401
+from transponster.cli import args
 from partisan.irods import Collection
-from structlog import get_logger
 
+# pylint: disable=ungrouped-imports
 from transponster.controller import Controller
-from transponster.util import JobBatch, Script
+from transponster.util import LOGGER, JobBatch, Script
 
 
 def main():
     """Entry point."""
-    LOGGER = get_logger()
-
-    parser = argparse.ArgumentParser("transponster")
-    parser.add_argument("-i", "--input_collection", required=True)
-    parser.add_argument("-o", "--output_collection", required=True)
-    parser.add_argument("-s", "--script", required=True)
-    parser.add_argument("--scratch_location")
-    parser.add_argument("-n", "--max_items_per_stage", type=int, default=1)
-    parser.add_argument("-p", "--progress_bar", action=argparse.BooleanOptionalAction, default=False)
-    parser.description = """Execute a script on files stored in iRODS.
-        The script must take as input a folder, and place its ouput in
-        a folder named 'output' which will be created for it."""
-    args = parser.parse_args()
 
     if args.max_items_per_stage <= 0:
         raise Exception("max_items_per_stage must be strictly positive.")
