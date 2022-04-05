@@ -21,7 +21,7 @@
 
 from pathlib import Path
 from queue import Queue
-from subprocess import CalledProcessError, SubprocessError
+from subprocess import SubprocessError
 from threading import Thread
 from shutil import rmtree
 
