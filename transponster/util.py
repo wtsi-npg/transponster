@@ -193,6 +193,7 @@ class ErrorType(Enum):
     PROCESSING_FAILED = auto()
     UPLOAD_FAILED = auto()
     FILE_NOT_FOUND = auto()
+    PERMISSION_ERROR = auto()
 
 
 @dataclass
@@ -230,6 +231,9 @@ class FailedJobBatch:
 
         if self.reason == ErrorType.FILE_NOT_FOUND:
             return f"Failed to run a script: {self.exception}"
+
+        if self.reason == ErrorType.PERMISSION_ERROR:
+            return f"Permission error whilst running a script: {self.exception}"
 
         # Default case for linter
         return f"Unknown failure for some inputs: {self.exception}"

@@ -85,6 +85,8 @@ class ProcessingThread(Thread):
             except FileNotFoundError as exception:
                 self.put_failed_batch(job_batch, exception, ErrorType.FILE_NOT_FOUND)
                 continue
+            except PermissionError as exception:
+                self.put_failed_batch(job_batch, exception, ErrorType.PERMISSION_ERROR)
 
             self.logger.info(
                 f"Finished running script on {working_dir}, removing input"
