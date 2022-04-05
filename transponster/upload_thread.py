@@ -20,7 +20,7 @@
 """Upload thread."""
 
 from queue import Queue
-from threading import Thread
+from threading import Lock, Thread
 
 from partisan.irods import Collection
 from structlog import get_logger
@@ -52,7 +52,8 @@ class UploadThread(Thread):
         self.done = False
         self.max_size = max_size
         self.logger = get_logger()
-        self.count = 0
+        self._count = 0
+        self._count_lock = Lock()
 
     def run(self):
         while not (self.upload_queue.empty() and self.done):
@@ -62,7 +63,8 @@ class UploadThread(Thread):
             except ClosedException:
                 self.done = True
                 break
-            self.count += 1
+            with self._count_lock:
+                self._count += 1
             if batch is None:
                 self.logger.info("Batch is empty due to previous error")
                 continue
@@ -87,3 +89,9 @@ class UploadThread(Thread):
                 self.logger.info(f"Batch #{self.count} uploaded")
 
         self.logger.info("Upload thread done")
+
+    @property
+    def count(self):
+        """Count of files that have been claimed by the upload thread."""
+        with self._count_lock:
+            return self._count

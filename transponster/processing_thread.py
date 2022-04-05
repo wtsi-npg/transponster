@@ -21,7 +21,7 @@
 
 from pathlib import Path
 from queue import Queue
-from subprocess import CalledProcessError
+from subprocess import SubprocessError
 from threading import Thread
 from shutil import rmtree
 
@@ -79,14 +79,14 @@ class ProcessingThread(Thread):
             self.logger.info(f"Running script on {working_dir}")
             try:
                 self.script.run(working_dir)
-            except CalledProcessError as exception:
-                failed_batch = FailedJobBatch(
-                    job_batch, exception, ErrorType.PROCESSING_FAILED
-                )
-                self.logger.error(failed_batch.get_error_message())
-                self.error_queue.put(failed_batch)
-                self.to_upload.put(None)
+            except SubprocessError as exception:
+                self.put_failed_batch(job_batch, exception, ErrorType.PROCESSING_FAILED)
                 continue
+            except FileNotFoundError as exception:
+                self.put_failed_batch(job_batch, exception, ErrorType.FILE_NOT_FOUND)
+                continue
+            except PermissionError as exception:
+                self.put_failed_batch(job_batch, exception, ErrorType.PERMISSION_ERROR)
 
             self.logger.info(
                 f"Finished running script on {working_dir}, removing input"
@@ -99,3 +99,12 @@ class ProcessingThread(Thread):
 
         self.to_upload.close()
         self.logger.info("Processing thread done")
+
+    def put_failed_batch(
+        self, batch: JobBatch, exception: Exception, error_type: ErrorType
+    ):
+
+        failed_batch = FailedJobBatch(batch, exception, error_type)
+        self.logger.error(failed_batch.get_error_message())
+        self.error_queue.put(failed_batch)
+        self.to_upload.put(None)
