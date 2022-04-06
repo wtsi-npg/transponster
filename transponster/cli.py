@@ -24,7 +24,9 @@ import structlog
 
 
 parser = argparse.ArgumentParser("transponster")
-parser.add_argument("-i", "--input_collection", required=True)
+input_group = parser.add_mutually_exclusive_group(required=True)
+input_group.add_argument("-i", "--input_collection")
+input_group.add_argument("-f", "--input_list_file")
 parser.add_argument("-o", "--output_collection", required=True)
 parser.add_argument("-s", "--script", required=True)
 parser.add_argument("--scratch_location")
