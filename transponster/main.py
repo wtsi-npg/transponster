@@ -42,6 +42,9 @@ def main():
     if args.max_items_per_stage <= 0:
         raise Exception("max_items_per_stage must be strictly positive.")
 
+    if args.batch_size <= 0:
+        raise Exception("batch_size must be strictly positive")
+
     scratch_location = (
         Path(args.scratch_location).resolve()
         if args.scratch_location is not None
@@ -63,12 +66,11 @@ def main():
         )
 
     download_queue = Queue()
-    batch_size = 1
     n_batches = 0
 
     if args.input_list_file is not None:
         n_batches = gen_download_queue_from_file(
-            args.input_list_file, download_queue, scratch_location, batch_size
+            args.input_list_file, download_queue, scratch_location, args.batch_size
         )
     elif args.input_collection is not None:
         input_collection = Collection(args.input_collection)
@@ -77,7 +79,7 @@ def main():
                 f"Error: Input Collection {input_collection_path} does not exist."
             )
         n_batches = gen_download_queue_from_collection(
-            input_collection, download_queue, scratch_location, batch_size
+            input_collection, download_queue, scratch_location, args.batch_size
         )
     else:
         # Should never get here

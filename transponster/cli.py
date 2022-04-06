@@ -31,6 +31,7 @@ parser.add_argument("-o", "--output_collection", required=True)
 parser.add_argument("-s", "--script", required=True)
 parser.add_argument("--scratch_location")
 parser.add_argument("-n", "--max_items_per_stage", type=int, default=1)
+parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument(
     "-p", "--progress_bar", action=argparse.BooleanOptionalAction, default=False
 )
