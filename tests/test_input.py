@@ -1,6 +1,14 @@
 from pathlib import Path
 from queue import Queue
-from transponster.input import gen_download_queue_from_file, scan_input_file
+from math import ceil
+
+from partisan.irods import Collection
+
+from transponster.input import (
+    gen_download_queue_from_collection,
+    gen_download_queue_from_file,
+    scan_input_file,
+)
 from transponster.util import JobBatch
 
 
@@ -44,3 +52,51 @@ class TestInput:
 
                 assert obj.local_name in datafiles
                 datafiles.remove(obj.local_name)
+
+    def test_batch_size_collection(self, irods_inputs, tmp_path_factory):
+        scratch = tmp_path_factory.mktemp("tmp")
+        actual_n_files = 15
+
+        for i in range(1, actual_n_files + 1):
+            download_queue = Queue()
+            collection = Collection(irods_inputs)
+
+            n_batches = gen_download_queue_from_collection(
+                collection,
+                download_queue,
+                scratch_location=scratch,
+                batch_size=i,
+            )
+
+            assert n_batches == ceil(actual_n_files / i)
+
+            count = 0
+            while not download_queue.empty():
+                _ = download_queue.get()
+                count += 1
+
+            assert n_batches == count
+
+    def test_batch_size_from_file(self, irods_inputs, tmp_path_factory):
+        _ = irods_inputs
+        scratch = tmp_path_factory.mktemp("tmp")
+        actual_n_files = 14
+
+        for i in range(1, actual_n_files + 1):
+            download_queue = Queue()
+
+            n_batches = gen_download_queue_from_file(
+                "tests/data/datafiles_list",
+                download_queue,
+                scratch_location=scratch,
+                batch_size=i,
+            )
+
+            assert n_batches == ceil(actual_n_files / i)
+
+            count = 0
+            while not download_queue.empty():
+                _ = download_queue.get()
+                count += 1
+
+            assert n_batches == count
