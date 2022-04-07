@@ -22,6 +22,7 @@ def setup_input_queue():
     input_queue = WrappedQueue()
 
     for dirpath, _, filenames in os.walk("tests/data/datafiles"):
+        filenames.sort()
         for filename in filenames:
             batch = JobBatch()
 

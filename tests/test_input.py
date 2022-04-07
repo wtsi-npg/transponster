@@ -1,4 +1,7 @@
-from transponster.input import scan_input_file
+from pathlib import Path
+from queue import Queue
+from transponster.input import gen_download_queue_from_file, scan_input_file
+from transponster.util import JobBatch
 
 
 class TestInput:
@@ -16,3 +19,28 @@ class TestInput:
         actual = scan_input_file("tests/data/input_list")
 
         assert actual == expected
+
+    def test_get_objs_from_irods_from_file(self, irods_inputs, tmp_path_factory):
+        _ = irods_inputs
+        scratch = tmp_path_factory.mktemp("tmp")
+
+        input_file_path = Path("tests/data/datafiles_list")
+
+        queue = Queue()
+
+        datafiles = [f"{i}.txt" for i in range(1, 15)]
+
+        n_batches = gen_download_queue_from_file(
+            input_file_path, queue, scratch_location=scratch, batch_size=1
+        )
+
+        assert n_batches == 14
+
+        while not queue.empty():
+
+            batch: JobBatch = queue.get()
+
+            for obj in batch.input_objs:
+
+                assert obj.local_name in datafiles
+                datafiles.remove(obj.local_name)
