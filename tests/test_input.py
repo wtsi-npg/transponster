@@ -13,7 +13,8 @@ from transponster.util import JobBatch
 
 
 class TestInput:
-    def test_load_input_objects_from_file(self):
+    def test_scan_input_file(self):
+        """Test transponster.input.scan_input_file."""
 
         expected = [
             "/seq/POG123/pass/1.fast5",
@@ -29,6 +30,8 @@ class TestInput:
         assert actual == expected
 
     def test_get_objs_from_irods_from_file(self, irods_inputs, tmp_path_factory):
+        """Test generating download queue from a file containing iRODS paths."""
+
         _ = irods_inputs
         scratch = tmp_path_factory.mktemp("tmp")
 
@@ -54,6 +57,8 @@ class TestInput:
                 datafiles.remove(obj.local_name)
 
     def test_batch_size_collection(self, irods_inputs, tmp_path_factory):
+        """Test batching performed correctly with an input collection."""
+
         scratch = tmp_path_factory.mktemp("tmp")
         actual_n_files = 15
 
@@ -78,6 +83,8 @@ class TestInput:
             assert n_batches == count
 
     def test_batch_size_from_file(self, irods_inputs, tmp_path_factory):
+        """Test batching performed correctly with an input file containing paths."""
+
         _ = irods_inputs
         scratch = tmp_path_factory.mktemp("tmp")
         actual_n_files = 14
