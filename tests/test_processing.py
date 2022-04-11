@@ -18,10 +18,11 @@ from transponster.util import (
 
 @pytest.fixture
 def setup_input_queue():
-
+    """Setup a mock queue of input files."""
     input_queue = WrappedQueue()
 
     for dirpath, _, filenames in os.walk("tests/data/datafiles"):
+        filenames.sort()
         for filename in filenames:
             batch = JobBatch()
 
@@ -45,7 +46,7 @@ def setup_input_queue():
 
 class TestFailures:
     def test_script_executable_not_found(self, setup_input_queue):
-
+        """Test a script failing due to a wrong shebang."""
         input_queue = setup_input_queue
         assert isinstance(input_queue, WrappedQueue)
         output_queue = WrappedQueue()
@@ -65,7 +66,7 @@ class TestFailures:
         assert isinstance(failed_batch.exception, FileNotFoundError)
 
     def test_script_fails_on_certain_files(self, setup_input_queue):
-
+        """Test a script failing only on certain inputs."""
         input_queue = setup_input_queue
         assert isinstance(input_queue, WrappedQueue)
         output_queue = WrappedQueue()
@@ -94,6 +95,7 @@ class TestFailures:
         assert errors_queue.empty()
 
     def test_not_executable(self, setup_input_queue):
+        """Test running ProcessingThread with a non-executable script."""
 
         input_queue = setup_input_queue
         assert isinstance(input_queue, WrappedQueue)

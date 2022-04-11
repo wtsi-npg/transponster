@@ -29,7 +29,11 @@ from partisan.irods import Collection
 
 # pylint: disable=ungrouped-imports
 from transponster.controller import Controller
-from transponster.util import LOGGER, JobBatch, Script
+from transponster.util import Script
+from transponster.input import (
+    gen_download_queue_from_collection,
+    gen_download_queue_from_file,
+)
 
 
 def main():
@@ -37,6 +41,9 @@ def main():
 
     if args.max_items_per_stage <= 0:
         raise Exception("max_items_per_stage must be strictly positive.")
+
+    if args.batch_size <= 0:
+        raise Exception("batch_size must be strictly positive")
 
     scratch_location = (
         Path(args.scratch_location).resolve()
@@ -52,32 +59,31 @@ def main():
 
     script = Script(script_path)
 
-    input_collection = Collection(args.input_collection)
-    if not input_collection.exists():
-        raise Exception(
-            f"Error: Input Collection {input_collection_path} does not exist."
-        )
-
     output_collection = Collection(args.output_collection)
     if not output_collection.exists():
         raise Exception(
             f"Error: Output Collection {args.output_collection} does not exsits."
         )
-    # The following loop can be improved to allow batching of processing inputs.
-    n_batches = 0
+
     download_queue = Queue()
-    for obj in input_collection.iter_contents():
-        if isinstance(obj, Collection):
-            raise NotImplementedError(
-                f" Collection {obj.path} found. Subcollections are not yet supported"
+    n_batches = 0
+
+    if args.input_list_file is not None:
+        n_batches = gen_download_queue_from_file(
+            args.input_list_file, download_queue, scratch_location, args.batch_size
+        )
+    elif args.input_collection is not None:
+        input_collection = Collection(args.input_collection)
+        if not input_collection.exists():
+            raise Exception(
+                f"Error: Input Collection {input_collection_path} does not exist."
             )
-
-        LOGGER.info(f"Adding {obj.name} as a job batch")
-        job_batch = JobBatch(scratch_location=scratch_location)
-        job_batch.add_input_obj(obj)
-        download_queue.put(job_batch)
-
-        n_batches += 1
+        n_batches = gen_download_queue_from_collection(
+            input_collection, download_queue, scratch_location, args.batch_size
+        )
+    else:
+        # Should never get here
+        raise Exception("No input locations were provided")
 
     controller = Controller(
         output_collection,

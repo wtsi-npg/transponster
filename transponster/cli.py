@@ -24,11 +24,14 @@ import structlog
 
 
 parser = argparse.ArgumentParser("transponster")
-parser.add_argument("-i", "--input_collection", required=True)
+input_group = parser.add_mutually_exclusive_group(required=True)
+input_group.add_argument("-i", "--input_collection")
+input_group.add_argument("-f", "--input_list_file")
 parser.add_argument("-o", "--output_collection", required=True)
 parser.add_argument("-s", "--script", required=True)
 parser.add_argument("--scratch_location")
 parser.add_argument("-n", "--max_items_per_stage", type=int, default=1)
+parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument(
     "-p", "--progress_bar", action=argparse.BooleanOptionalAction, default=False
 )
