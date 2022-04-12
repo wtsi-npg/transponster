@@ -1,5 +1,4 @@
 import pytest
-from queue import Queue
 
 
 @pytest.fixture

@@ -3,9 +3,8 @@ from pathlib import Path
 import os
 from subprocess import SubprocessError
 from transponster.util import LocalObject2, Script, WrappedQueue, ClosedException
-from pytest import mark as m, raises, fixture
+from pytest import raises
 from partisan.irods import DataObject
-from tests.conftest import script_working_dir
 
 
 class TestWrappedQueue:
