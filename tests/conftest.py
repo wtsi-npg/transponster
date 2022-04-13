@@ -35,3 +35,9 @@ def script_working_dir(tmp_path_factory):
     os.mkdir(Path(scratch, "output"))
 
     yield scratch
+
+
+@pytest.fixture(scope="session")
+def scratch_folder(tmp_path_factory):
+    """A scratch location to be used for JobBatch"""
+    yield tmp_path_factory.mktemp("scratch")

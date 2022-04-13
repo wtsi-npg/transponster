@@ -2,9 +2,18 @@ from pathlib import Path
 
 import os
 from subprocess import SubprocessError
-from transponster.util import LocalObject2, Script, WrappedQueue, ClosedException
+import threading
+from time import sleep
+from transponster.util import (
+    FailedJobBatch,
+    JobBatch,
+    LocalObject2,
+    Script,
+    WrappedQueue,
+    ClosedException,
+)
 from pytest import raises
-from partisan.irods import DataObject
+from partisan.irods import DataObject, Collection
 
 
 class TestWrappedQueue:
@@ -30,6 +39,19 @@ class TestWrappedQueue:
         queue.close()
         with raises(ClosedException):
             queue.put("Fail")
+
+    def successfully_notify_closed():
+        queue = WrappedQueue()
+        def worker():
+            with raises(ClosedException):
+                queue.get()
+                queue.get()
+
+        thread = threading.Thread(target=worker)
+        queue.put(123)
+        sleep(3)
+        queue.close()
+        thread.join()
 
 
 class TestScript:
@@ -128,6 +150,9 @@ class TestLocalObject2:
         with open(redownloaded_path, "r") as redownloaded:
             assert redownloaded.read() == "File number 2"
 
+        with raises(Exception, match="Cannot upload a LocalObject2 twice."):
+            localobj2.upload()
+
     def test_upload_nonexistent_file(self):
         """Test uploading a nonexistent file."""
 
@@ -142,24 +167,114 @@ class TestLocalObject2:
         with raises(Exception):
             localobj2.upload()
 
+    
+    def test_upload_non_local_file(self):
+
+        localobj2 = LocalObject2(
+            None,
+            "doesntmatter",
+            "wherethefileis",
+            is_local=False,
+            is_remote=False,
+        )
+
+        with raises(Exception, match="Cannot upload a LocalObject2 which is not local."):
+            localobj2.upload()
+
 
 class TestJobBatch:
-    def test_output_objs_getter(self):
+    def test_output_objs_getter(self, tmp_path_factory):
         """Test getting all output from JobBatch."""
-        # TODO
-        pass
+        scratch: Path = tmp_path_factory.mktemp("tmp")
+        job_batch = JobBatch(scratch_location=scratch)
+        # Create a bunch of output files
+        for i in range(16):
+            open(Path(job_batch.output_folder_path, f"file-{i}.txt"), "a").close()
 
-    def test_add_input_obj(self):
+        outputs = job_batch.get_output_objs(Collection("/testZone/home/irods/outputs"))
+
+        assert len(outputs) == 16
+
+        paths = [f"file-{i}.txt" for i in range(16)]
+
+        for output in outputs:
+            assert output.is_local
+            assert not output.is_remote
+            assert output.local_folder == job_batch.output_folder_path
+            assert output.local_name in paths
+            paths.remove(output.local_name)
+
+        assert len(paths) == 0
+
+    def test_add_input_obj(self, irods_inputs, scratch_folder):
         """Test adding an input object to JobBatch."""
-        # TODO
-        pass
 
-    def test_input_folder_path(self):
+        to_add = DataObject(irods_inputs + "/2.txt")
+
+        job_batch = JobBatch(scratch_location=scratch_folder)
+
+        job_batch.add_input_obj(to_add)
+
+        assert len(job_batch.input_objs) == 1
+
+        input_obj = job_batch.input_objs[0]
+
+        assert input_obj.local_name == "2.txt"
+        assert not input_obj.is_local
+        assert input_obj.is_remote
+
+    def test_input_folder_path(self, tmp_path_factory):
         """Test correct input folder path."""
-        # TODO
-        pass
+        scratch: Path = tmp_path_factory.mktemp("tmp")
+        job_batch = JobBatch(scratch)
 
-    def test_output_folder_path(self):
+        assert (
+            job_batch.input_folder_path.resolve()
+            == Path(scratch, job_batch.tmp_dir.name, "input").resolve()
+        )
+
+    def test_output_folder_path(self, tmp_path_factory):
         """Test correct output folder path."""
-        # TODO
-        pass
+        scratch: Path = tmp_path_factory.mktemp("tmp")
+        job_batch = JobBatch(scratch)
+
+        assert (
+            job_batch.output_folder_path.resolve()
+            == Path(scratch, job_batch.tmp_dir.name, "output").resolve()
+        )
+
+
+class TestFailedJobBatch:
+
+    def test_cleanup_tmp(self, scratch_folder):
+
+        job_batch = JobBatch(scratch_location=scratch_folder)
+
+        # Populate folders with things
+        for i in range(5):
+            open(Path(job_batch.input_folder_path, f"f{i}.txt"), "a").close()
+            open(Path(job_batch.output_folder_path, f"f{i}.txt"), "a").close()
+
+
+        failed_batch = FailedJobBatch(job_batch, None, None)
+
+        failed_batch.cleanup_tmp()
+
+        assert not os.path.exists(job_batch.output_folder_path)
+        assert not os.path.exists(job_batch.input_folder_path)
+        assert not os.path.exists(job_batch.tmp_dir.name)
+
+    
+    def test_get_input_object_locations(self, scratch_folder, irods_inputs):
+
+        job_batch = JobBatch(scratch_location=scratch_folder)
+        input_paths = []
+        for obj in Collection(irods_inputs).iter_contents():
+
+            assert isinstance(obj, DataObject)
+            input_paths.append(obj.name)
+            job_batch.add_input_obj(obj)
+
+        failed_batch = FailedJobBatch(job_batch, None, None)
+
+        assert set(input_paths) == set(failed_batch.get_input_object_locations())
