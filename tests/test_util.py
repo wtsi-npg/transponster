@@ -42,6 +42,7 @@ class TestWrappedQueue:
 
     def successfully_notify_closed():
         queue = WrappedQueue()
+
         def worker():
             with raises(ClosedException):
                 queue.get()
@@ -167,7 +168,6 @@ class TestLocalObject2:
         with raises(Exception):
             localobj2.upload()
 
-    
     def test_upload_non_local_file(self):
 
         localobj2 = LocalObject2(
@@ -178,7 +178,9 @@ class TestLocalObject2:
             is_remote=False,
         )
 
-        with raises(Exception, match="Cannot upload a LocalObject2 which is not local."):
+        with raises(
+            Exception, match="Cannot upload a LocalObject2 which is not local."
+        ):
             localobj2.upload()
 
 
@@ -245,7 +247,6 @@ class TestJobBatch:
 
 
 class TestFailedJobBatch:
-
     def test_cleanup_tmp(self, scratch_folder):
 
         job_batch = JobBatch(scratch_location=scratch_folder)
@@ -255,7 +256,6 @@ class TestFailedJobBatch:
             open(Path(job_batch.input_folder_path, f"f{i}.txt"), "a").close()
             open(Path(job_batch.output_folder_path, f"f{i}.txt"), "a").close()
 
-
         failed_batch = FailedJobBatch(job_batch, None, None)
 
         failed_batch.cleanup_tmp()
@@ -264,7 +264,6 @@ class TestFailedJobBatch:
         assert not os.path.exists(job_batch.input_folder_path)
         assert not os.path.exists(job_batch.tmp_dir.name)
 
-    
     def test_get_input_object_locations(self, scratch_folder, irods_inputs):
 
         job_batch = JobBatch(scratch_location=scratch_folder)
